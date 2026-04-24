@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>키즈 직소퍼즐 월드</title>
+<style>
+  :root{
+    --bg1:#0f0c29;
+    --bg2:#221f4d;
+    --bg3:#191734;
+    --ink:#f5f4ff;
+    --muted:#b9b6d9;
+    --panel:rgba(255,255,255,0.09);
+    --panel-2:rgba(255,255,255,0.06);
+    --line:rgba(255,255,255,0.12);
+    --accent:#6c5ce7;
+    --accent-2:#a29bfe;
+    --good:#55efc4;
+    --gold:#ffeaa7;
+    --danger:#ff7675;
+    --shadow:0 22px 50px rgba(0,0,0,0.34);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(162,155,254,0.12), transparent 22%),
+      radial-gradient(circle at 80% 14%, rgba(116,185,255,0.08), transparent 18%),
+      linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  }
+  body.theme-city{
+    --bg1:#0f0c29;
+    --bg2:#302b63;
+    --bg3:#1e2348;
+    --accent:#6c5ce7;
+    --accent-2:#74b9ff;
+  }
+  body.theme-toy{
+    --bg1:#17112f;
+    --bg2:#2a1d58;
+    --bg3:#3b2550;
+    --accent:#ff7675;
+    --accent-2:#74b9ff;
+  }
+  body.theme-winter{
+    --bg1:#0d1435;
+    --bg2:#233a70;
+    --bg3:#24243e;
+    --accent:#74b9ff;
+    --accent-2:#a29bfe;
+  }
+  body.theme-princess{
+    --bg1:#23132f;
+    --bg2:#6f2d68;
+    --bg3:#2b1a48;
+    --accent:#fd79a8;
+    --accent-2:#ffeaa7;
+  }
+  body.theme-emotion{
+    --bg1:#112632;
+    --bg2:#126c72;
+    --bg3:#24365f;
+    --accent:#00cec9;
+    --accent-2:#fab1a0;
+  }
+  body.theme-space{
+    --bg1:#050917;
+    --bg2:#13235f;
+    --bg3:#27194d;
+    --accent:#6c5ce7;
+    --accent-2:#00d2ff;
+  }
+.screen{
+  position:fixed;
+  inset:0;
+  display:none;
+  flex-direction:column;
+}
+.screen.active{display:flex}
+#screen-home{
+  overflow-y:auto;
+}
+  .panel{
+    background:var(--panel);
+    backdrop-filter:blur(18px);
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+    border-radius:28px;
+  }
+  .btn{
+    border:none;
+    border-radius:18px;
+    padding:12px 16px;
+    font-size:14px;
+    font-weight:800;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn.primary{
+    color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 10px 24px rgba(0,0,0,0.14);
+  }
+  .btn.secondary{
+    color:var(--ink);
+    background:rgba(255,255,255,0.10);
+  }
+  .btn.ghost{
+    color:var(--ink);
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.16);
+  }
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:800;
+    background:rgba(255,255,255,0.10);
+  }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    padding:16px 18px 0;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand-badge{
+    width:52px;
+    height:52px;
+    border-radius:18px;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#fff;
+    font-size:26px;
+    box-shadow:0 12px 24px rgba(0,0,0,0.28);
+  }
+  .brand h1{font-size:28px;line-height:1}
+  .brand p{font-size:13px;color:var(--muted);margin-top:4px}
+  .status-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .status-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border-radius:18px;
+    background:rgba(255,255,255,0.08);
+    font-size:13px;
+    font-weight:700;
+  }
+  .status-chip strong{font-size:14px}
+  .summary-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .user-layout{
+    min-height:100vh;
+    justify-content:center;
+    align-items:center;
+    padding:16px;
+  }
+  .user-card{
+    width:min(384px,92%);
+    padding:8px 0 6px;
+    background:transparent;
+    border:none;
+    box-shadow:none;
+    backdrop-filter:none;
+    text-align:center;
+  }
+  .hero-title{
+    font-size:32px;
+    line-height:1.05;
+    margin-bottom:8px;
+    background:linear-gradient(135deg,#ffeaa7,#fdcb6e,#f39c12);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .hero-copy{
+    color:#a29bfe;
+    font-size:13px;
+    line-height:1.6;
+    margin-bottom:22px;
+  }
+  .user-grid{
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    align-items:center;
+  }
+  .user-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:8px;
+    max-height:220px;
+    overflow:auto;
+    padding-right:6px;
+    width:min(368px,100%);
+  }
+  .user-row{
+    display:block;
+  }
+  .user-item{
+    border:none;
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    text-align:left;
+    padding:12px 12px 12px 14px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.10);
+    cursor:pointer;
+    border:2px solid transparent;
+    min-height:58px;
+  }
+  .user-item.active{
+    background:linear-gradient(135deg,rgba(108,92,231,0.34),rgba(162,155,254,0.18));
+    border-color:rgba(162,155,254,0.55);
+    box-shadow:0 18px 34px rgba(0,0,0,0.18);
+  }
+  .user-item .meta{
+    font-size:11px;
+    color:#c7c4e6;
+    margin-top:3px;
+  }
+  .user-name{
+    font-size:15px;
+    font-weight:900;
+    line-height:1.15;
+    color:#fff;
+  }
+  .delete-btn{
+    flex:0 0 auto;
+    width:32px;
+    height:32px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    border-radius:10px;
+    background:transparent;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+    color:rgba(255,255,255,0.72);
+    border:1px solid transparent;
+  }
+  .delete-btn:hover{
+    background:rgba(255,255,255,0.10);
+    color:#fff;
+  }
+  .input{
+    width:100%;
+    border:none;
+    border-radius:13px;
+    padding:11px 14px;
+    font-size:13px;
+    background:rgba(255,255,255,0.06);
+    color:var(--ink);
+    margin-bottom:12px;
+    border:2px solid rgba(162,155,254,0.42);
+  }
+  .input::placeholder{
+    color:rgba(201,198,227,0.44);
+  }
+  .new-user-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 74px;
+    gap:8px;
+    align-items:stretch;
+    width:min(368px,100%);
+  }
+  .new-user-row .input{
+    margin-bottom:0;
+  }
+  .new-user-row .btn,
+  #enter-user-btn{
+    white-space:nowrap;
+  }
+  .user-add-btn{
+    border-radius:13px;
+    font-size:13px;
+    padding:10px 0;
+    background:linear-gradient(135deg,#6c5ce7,#8f86ff);
+  }
+  .user-start-btn{
+    width:min(240px,100%);
+    margin-top:10px;
+    border-radius:999px;
+    font-size:15px;
+    font-weight:900;
+    padding:13px 16px;
+    background:linear-gradient(135deg,#6c5ce7,#9f98ff);
+    box-shadow:0 18px 36px rgba(108,92,231,0.28);
+  }
+  .home-layout{
+    padding:16px 18px 20px;
+    gap:14px;
+  }
+  .home-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:14px;
+    flex:1;
+    min-height:0;
+  }
+  .card-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .card-title h2{font-size:18px}
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+  .stat-box{
+    background:rgba(255,255,255,0.07);
+    border-radius:18px;
+    padding:14px;
+  }
+  .stat-box label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .stat-box strong{
+    font-size:24px;
+    line-height:1;
+  }
+  .xp-card{
+    background:rgba(255,255,255,0.07);
+    border-radius:20px;
+    padding:14px;
+  }
+  .xp-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:13px;
+  }
+  .xp-bar{
+    height:12px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.09);
+    overflow:hidden;
+  }
+  .xp-fill{
+    height:100%;
+    width:0;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    border-radius:999px;
+  }
+  .main-panels{
+    display:grid;
+    grid-template-rows:auto 1fr;
+    gap:14px;
+    min-height:auto;
+  }
+  .world-tabs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    padding:2px 0 0;
+  }
+  .world-tab{
+    border:none;
+    border-radius:18px;
+    padding:11px 13px;
+    font-size:13px;
+    font-weight:800;
+    cursor:pointer;
+    background:rgba(255,255,255,0.08);
+    color:var(--ink);
+    min-width:138px;
+    text-align:left;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .world-tab.active{
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#fff;
+  }
+  .world-tab.locked{
+    opacity:0.45;
+  }
+  .world-tab-top{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    margin-bottom:6px;
+  }
+  .world-tab-title{
+    display:block;
+    font-size:13px;
+    line-height:1.2;
+  }
+  .world-tab-meta{
+    display:block;
+    font-size:11px;
+    line-height:1.35;
+    color:rgba(255,255,255,0.68);
+  }
+  .world-tab.active .world-tab-meta{color:rgba(255,255,255,0.86)}
+  .stage-panel{
+    padding:16px;
+    min-height:auto;
+    display:flex;
+    flex-direction:column;
+    background:rgba(12,12,30,0.48);
+  }
+  .stage-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:14px;
+    overflow:visible;
+  }
+  .stage-card{
+    border:none;
+    text-align:left;
+    border-radius:18px;
+    overflow:hidden;
+    background:rgba(255,255,255,0.06);
+    color:#fff;
+    cursor:pointer;
+    min-height:0;
+    aspect-ratio:1.02;
+    position:relative;
+    border:1px solid rgba(255,255,255,0.08);
+    transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;
+  }
+  .stage-card:hover{
+    transform:scale(1.03);
+    border-color:rgba(162,155,254,0.28);
+    box-shadow:0 12px 24px rgba(0,0,0,0.2);
+  }
+  .stage-card.locked{
+    opacity:0.5;
+    cursor:not-allowed;
+  }
+  .stage-card.completed{
+    border-color:rgba(85,239,196,0.38);
+    box-shadow:0 14px 26px rgba(0,0,0,0.18);
+  }
+  .stage-card.current{
+    border-color:rgba(255,234,167,0.72);
+    box-shadow:0 0 0 3px rgba(255,234,167,0.14),0 16px 28px rgba(0,0,0,0.22);
+  }
+  .stage-card.family-princess{border-color:rgba(253,121,168,0.28)}
+  .stage-card.family-emotion{border-color:rgba(0,206,201,0.28)}
+  .stage-card.family-space{border-color:rgba(0,210,255,0.28)}
+  .stage-card.completed .stage-thumb{
+    filter:brightness(0.72) saturate(1.08);
+  }
+  .stage-card.completed .stage-body{
+    background:linear-gradient(180deg,rgba(8,8,18,0.02),rgba(8,8,18,0.58));
+  }
+  .stage-card.completed .stars{
+    color:#fff1a8;
+  }
+  .stage-thumb{
+    position:absolute;
+    inset:0;
+    background-size:cover;
+    background-position:center;
+    filter:brightness(0.42) saturate(0.9);
+  }
+  .stage-body{
+    position:relative;
+    z-index:1;
+    height:100%;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:6px;
+    background:linear-gradient(180deg,rgba(8,8,18,0.04),rgba(8,8,18,0.82));
+  }
+  .stage-label{
+    align-self:flex-start;
+    padding:5px 8px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.16);
+    font-size:11px;
+    font-weight:800;
+    color:#fff;
+    margin-bottom:auto;
+  }
+  .stage-state{
+    position:absolute;
+    top:10px;
+    right:10px;
+    z-index:2;
+    padding:5px 8px;
+    border-radius:999px;
+    background:rgba(8,8,18,0.55);
+    color:#fff;
+    font-size:11px;
+    font-weight:900;
+  }
+  .stage-body h3{font-size:16px;margin-bottom:5px}
+  .stage-meta{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.45;
+    min-height:34px;
+  }
+  .stars{
+    margin-top:10px;
+    font-size:14px;
+    letter-spacing:1px;
+    color:var(--gold);
+  }
+  .game-layout{
+    padding:12px 14px 14px;
+    gap:10px;
+  }
+  .game-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    padding:8px 14px;
+    min-height:54px;
+    border-radius:18px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 10px 24px rgba(0,0,0,0.18);
+  }
+  .game-title{
+    padding:0;
+    background:transparent;
+    border:none;
+    box-shadow:none;
+  }
+  .game-title h2{font-size:18px;margin-bottom:2px;color:#fff}
+  .game-title p{font-size:12px;color:rgba(255,255,255,0.84)}
+  .game-stats{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .game-chip{
+    min-width:88px;
+    text-align:center;
+    padding:8px 12px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.16);
+  }
+  .game-chip label{
+    display:block;
+    font-size:11px;
+    color:rgba(255,255,255,0.78);
+    margin-bottom:3px;
+  }
+  .game-chip strong{font-size:16px;color:#fff}
+  .game-shell{
+    position:relative;
+    flex:1;
+    min-height:0;
+    overflow:hidden;
+    border-radius:30px;
+    background:rgba(9,10,27,0.38);
+  }
+  #game-area{
+    position:relative;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+  }
+  #board{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    border-radius:28px;
+    border:3px dashed rgba(255,255,255,0.86);
+    background:
+      linear-gradient(180deg, rgba(40,52,92,0.34), rgba(18,24,49,0.30)),
+      rgba(255,255,255,0.18);
+    box-shadow:
+      inset 0 0 0 8px rgba(255,255,255,0.16),
+      0 18px 38px rgba(22,20,43,0.18);
+  }
+  #board-guide{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    border-radius:28px;
+    pointer-events:none;
+  }
+  #preview-panel{
+    position:absolute;
+    right:20px;
+    top:18px;
+    z-index:3;
+    padding:12px;
+    width:190px;
+    background:rgba(10,10,24,0.48);
+  }
+  #preview-panel canvas{
+    width:100%;
+    height:auto;
+    display:block;
+    border-radius:16px;
+  }
+  #preview-panel .label{
+    text-align:center;
+    font-size:12px;
+    font-weight:800;
+    margin-top:8px;
+  }
+  canvas.piece{
+    position:absolute;
+    cursor:grab;
+    touch-action:none;
+  }
+  canvas.piece.placed{
+    cursor:default;
+    pointer-events:none;
+  }
+  .toast{
+    position:fixed;
+    left:50%;
+    top:22px;
+    transform:translateX(-50%) translateY(-120px);
+    padding:12px 20px;
+    border-radius:18px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#fff;
+    font-size:14px;
+    font-weight:800;
+    z-index:200;
+    box-shadow:0 12px 28px rgba(0,0,0,0.18);
+    transition:transform .4s ease;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(6,6,16,0.74);
+    z-index:100;
+    padding:20px;
+  }
+  .modal.show{display:flex}
+  .modal-box{
+    width:min(460px,100%);
+    padding:28px;
+  }
+  .modal-box h3{font-size:30px;margin-bottom:8px}
+  .modal-box p{
+    font-size:15px;
+    line-height:1.6;
+    color:var(--muted);
+    margin-bottom:18px;
+  }
+  .result-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .result-grid .stat-box strong{font-size:20px}
+  .modal-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .confirm-actions{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+  }
+  .confetti{
+    position:fixed;
+    width:10px;
+    height:10px;
+    pointer-events:none;
+    z-index:160;
+  }
+  .hidden{display:none !important}
+  @media (max-width:1100px){
+    body{overflow:auto}
+    .stage-grid{grid-template-columns:repeat(3,1fr)}
+  }
+  @media (max-width:760px){
+    .topbar,.home-layout,.game-layout{padding-left:14px;padding-right:14px}
+    .stage-grid{grid-template-columns:repeat(2,1fr)}
+    .game-header{flex-direction:column;align-items:stretch}
+    .game-stats{justify-content:space-between}
+    #preview-panel{right:12px;top:12px;width:128px}
+  }
+</style>
+</head>
+<body class="theme-city">
+<div id="toast" class="toast"></div>
+
+<section id="screen-user" class="screen active user-layout">
+  <div class="panel user-card">
+    <h1 class="hero-title">🧩 직소퍼즐 어드벤처</h1>
+    <p class="hero-copy">누가 플레이하나요?</p>
+    <div class="user-grid">
+      <div id="user-list" class="user-list"></div>
+      <div class="new-user-row">
+        <input id="new-user-name" class="input" type="text" maxlength="12" placeholder="새 이름 입력...">
+        <button id="add-user-btn" class="btn primary user-add-btn">추가</button>
+      </div>
+      <button id="enter-user-btn" class="btn primary user-start-btn">🎮 시작하기</button>
+    </div>
+  </div>
+</section>
+
+<section id="screen-home" class="screen home-layout">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-badge">🧩</div>
+      <div>
+        <h1>키즈 직소퍼즐 월드</h1>
+        <p>스테이지가 계속 추가될 수 있는 서비스형 구조</p>
+      </div>
+    </div>
+    <div class="status-row">
+      <div class="status-chip">👤 <strong id="active-user-name">-</strong></div>
+      <div class="status-chip">🏅 <strong id="summary-level">Lv.1</strong></div>
+      <div class="status-chip">⭐ <strong id="summary-stars">0</strong></div>
+      <div class="status-chip">🏆 <strong id="summary-clear">0</strong></div>
+      <div class="status-chip">🔥 <strong id="summary-streak">0일</strong></div>
+      <button id="switch-user-btn" class="btn secondary">사용자 변경</button>
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <main class="main-panels">
+      <div class="panel" style="padding:14px 16px;">
+        <div class="card-title">
+          <h2>월드 선택</h2>
+          <span class="pill">총 100스테이지</span>
+        </div>
+        <div id="home-world-tabs" class="world-tabs"></div>
+      </div>
+
+      <div class="panel stage-panel">
+        <div class="card-title">
+          <h2 id="stage-panel-title">월드 1 스테이지</h2>
+          <span class="pill" id="stage-panel-meta">피스 수와 보상 확인</span>
+        </div>
+        <div id="stage-grid" class="stage-grid"></div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section id="screen-game" class="screen game-layout">
+  <div class="game-header">
+    <div class="panel game-title">
+      <h2 id="game-stage-title">스테이지 1</h2>
+      <p id="game-stage-copy">피스를 모두 맞춰 보세요.</p>
+    </div>
+    <div class="game-stats">
+      <div class="game-chip"><label>진행</label><strong id="game-counter">0 / 0</strong></div>
+      <div class="game-chip"><label>시간</label><strong id="game-timer">00:00</strong></div>
+      <div class="game-chip"><label>목표</label><strong id="game-goal">⭐ 3</strong></div>
+      <button id="game-shuffle-btn" class="btn secondary">다시 섞기</button>
+      <button id="game-exit-btn" class="btn secondary">나가기</button>
+    </div>
+  </div>
+
+  <div class="panel game-shell">
+    <div id="game-area">
+      <div id="preview-panel" class="panel">
+        <canvas id="preview-canvas" width="240" height="240"></canvas>
+        <div class="label">완성 그림</div>
+      </div>
+      <div id="board">
+        <canvas id="board-guide"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="complete-modal" class="modal">
+  <div class="panel modal-box">
+    <h3>완성했어요!</h3>
+    <p id="complete-copy">축하해요. 이번 스테이지를 클리어했어요.</p>
+    <div class="result-grid">
+      <div class="stat-box"><label>획득 별</label><strong id="complete-stars">0</strong></div>
+      <div class="stat-box"><label>걸린 시간</label><strong id="complete-time">00:00</strong></div>
+      <div class="stat-box"><label>획득 XP</label><strong id="complete-xp">0</strong></div>
+    </div>
+    <div class="modal-actions">
+      <button id="complete-next-btn" class="btn primary">다음 스테이지</button>
+      <button id="complete-home-btn" class="btn secondary">홈으로</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-modal" class="modal">
+  <div class="panel modal-box">
+    <h3 id="confirm-title">확인</h3>
+    <p id="confirm-copy">정말 진행할까요?</p>
+    <div class="confirm-actions">
+      <button id="confirm-cancel-btn" class="btn secondary">취소</button>
+      <button id="confirm-ok-btn" class="btn primary">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEYS = {
+  users: "kids-jigsaw-users-v1",
+  activeUserId: "kids-jigsaw-active-user-v1"
+};
+
+const IMAGE_POOL = [
+  { id: "city-1", family: "city", title: "동물 도시 산책", src: "./zootopia-style-jigsaw-sample.png" },
+  { id: "toy-1", family: "toy", title: "토이룸 모험 1", src: "./toyroom-jigsaw-sample-1.png" },
+  { id: "toy-2", family: "toy", title: "토이룸 모험 2", src: "./toyroom-jigsaw-sample-2.png" },
+  { id: "winter-1", family: "winter", title: "겨울 왕국 1", src: "./winter-fairytale-jigsaw-sample-1.png" },
+  { id: "winter-2", family: "winter", title: "겨울 왕국 2", src: "./winter-fairytale-jigsaw-sample-2.png" },
+  { id: "princess-01", family: "princess", title: "공주 판타지 01", src: "./princess-fantasy-01.png" },
+  { id: "princess-02", family: "princess", title: "공주 판타지 02", src: "./princess-fantasy-02.png" },
+  { id: "princess-03", family: "princess", title: "공주 판타지 03", src: "./princess-fantasy-03.png" },
+  { id: "princess-04", family: "princess", title: "공주 판타지 04", src: "./princess-fantasy-04.png" },
+  { id: "princess-05", family: "princess", title: "공주 판타지 05", src: "./princess-fantasy-05.png" },
+  { id: "princess-06", family: "princess", title: "공주 판타지 06", src: "./princess-fantasy-06.png" },
+  { id: "princess-07", family: "princess", title: "공주 판타지 07", src: "./princess-fantasy-07.png" },
+  { id: "princess-08", family: "princess", title: "공주 판타지 08", src: "./princess-fantasy-08.png" },
+  { id: "princess-09", family: "princess", title: "공주 판타지 09", src: "./princess-fantasy-09.png" },
+  { id: "princess-10", family: "princess", title: "공주 판타지 10", src: "./princess-fantasy-10.png" },
+  { id: "princess-11", family: "princess", title: "공주 판타지 11", src: "./princess-fantasy-11.png" },
+  { id: "princess-12", family: "princess", title: "공주 판타지 12", src: "./princess-fantasy-12.png" },
+  { id: "princess-13", family: "princess", title: "공주 판타지 13", src: "./princess-fantasy-13.png" },
+  { id: "princess-14", family: "princess", title: "공주 판타지 14", src: "./princess-fantasy-14.png" },
+  { id: "princess-15", family: "princess", title: "공주 판타지 15", src: "./princess-fantasy-15.png" },
+  { id: "princess-16", family: "princess", title: "공주 판타지 16", src: "./princess-fantasy-16.png" },
+  { id: "princess-17", family: "princess", title: "공주 판타지 17", src: "./princess-fantasy-17.png" },
+  { id: "princess-18", family: "princess", title: "공주 판타지 18", src: "./princess-fantasy-18.png" },
+  { id: "princess-19", family: "princess", title: "공주 판타지 19", src: "./princess-fantasy-19.png" },
+  { id: "princess-20", family: "princess", title: "공주 판타지 20", src: "./princess-fantasy-20.png" },
+  { id: "emotion-1", family: "emotion", title: "감정 모험 1", src: "./emotion-adventure-1.png" },
+  { id: "emotion-2", family: "emotion", title: "감정 모험 2", src: "./emotion-adventure-2.png" },
+  { id: "emotion-3", family: "emotion", title: "감정 모험 3", src: "./emotion-adventure-3.png" },
+  { id: "emotion-4", family: "emotion", title: "감정 모험 4", src: "./emotion-adventure-4.png" },
+  { id: "space-1", family: "space", title: "우주 사가 1", src: "./space-saga-1.png" },
+  { id: "space-2", family: "space", title: "우주 사가 2", src: "./space-saga-2.png" },
+  { id: "space-3", family: "space", title: "우주 사가 3", src: "./space-saga-3.png" },
+  { id: "space-4", family: "space", title: "우주 사가 4", src: "./space-saga-4.png" }
+];
+
+const WORLD_DEFS = [
+  {
+    name: "첫 퍼즐 마을",
+    short: "새싹",
+    description: "동물 도시, 토이룸, 겨울 동화로 시작하는 입문 월드입니다.",
+    familyCycle: ["city", "toy", "winter"],
+    layouts: [[2,2],[3,2],[4,2],[3,3],[4,3],[5,3],[4,4],[6,3],[5,4],[6,4]]
+  },
+  {
+    name: "공주 판타지 성",
+    short: "공주",
+    description: "공주 판타지 그림만 모은 첫 전용 월드입니다.",
+    familyCycle: ["princess"],
+    layouts: [[5,5],[7,4],[6,5],[8,4],[7,5],[6,6],[8,5],[7,6],[9,5],[8,6]]
+  },
+  {
+    name: "감정 모험 숲",
+    short: "감정",
+    description: "기쁨과 놀람이 살아 있는 감정 모험 전용 월드입니다.",
+    familyCycle: ["emotion"],
+    layouts: [[7,7],[10,5],[9,6],[8,7],[10,6],[9,7],[8,8],[11,6],[10,7],[12,6]]
+  },
+  {
+    name: "우주 사가 발사대",
+    short: "우주",
+    description: "로켓과 별빛 장면을 맞추는 우주 사가 전용 월드입니다.",
+    familyCycle: ["space"],
+    layouts: [[11,7],[10,8],[9,9],[12,7],[11,8],[10,9],[12,8],[13,7],[14,7],[10,10]]
+  },
+  {
+    name: "토이 시티 챌린지",
+    short: "도전",
+    description: "동물 도시와 토이룸을 오가며 속도를 올리는 월드입니다.",
+    familyCycle: ["city", "toy"],
+    layouts: [[8,8],[9,7],[10,7],[8,9],[9,8],[10,8],[11,7],[9,9],[12,7],[10,10]]
+  },
+  {
+    name: "로열 윈터 궁전",
+    short: "겨울",
+    description: "공주 판타지와 겨울 동화가 이어지는 고밀도 월드입니다.",
+    familyCycle: ["princess", "winter"],
+    layouts: [[8,8],[9,8],[10,7],[11,7],[8,9],[9,9],[10,8],[12,7],[11,8],[10,10]]
+  },
+  {
+    name: "이모션 스카이 랩",
+    short: "랩",
+    description: "감정 모험을 더 어려운 판으로 다시 만나는 집중 월드입니다.",
+    familyCycle: ["emotion"],
+    layouts: [[8,9],[9,8],[10,8],[11,7],[12,7],[9,9],[10,9],[12,8],[13,7],[10,10]]
+  },
+  {
+    name: "갤럭시 레이스",
+    short: "은하",
+    description: "우주 사가를 큰 퍼즐로 맞추는 상급 전용 월드입니다.",
+    familyCycle: ["space"],
+    layouts: [[9,9],[10,8],[11,8],[12,7],[10,9],[12,8],[13,7],[14,7],[11,9],[10,10]]
+  },
+  {
+    name: "드림 크로스오버",
+    short: "드림",
+    description: "공주, 감정, 우주 시리즈가 번갈아 나오는 후반 월드입니다.",
+    familyCycle: ["princess", "emotion", "space"],
+    layouts: [[10,8],[11,8],[12,8],[13,7],[10,9],[11,9],[12,9],[14,7],[13,8],[10,10]]
+  },
+  {
+    name: "파이널 드림 게이트",
+    short: "게이트",
+    description: "모든 신규 시리즈와 기존 테마가 섞이는 최종 월드입니다.",
+    familyCycle: ["princess", "emotion", "space", "winter", "toy", "city"],
+    layouts: [[10,9],[11,8],[12,8],[13,8],[14,7],[11,9],[12,9],[13,9],[10,10],[10,10]]
+  }
+];
+
+const imageCache = new Map();
+const STAGES = buildStages();
+
+const state = {
+  users: [],
+  activeUserId: null,
+  selectedUserId: null,
+  selectedWorld: 1,
+  currentStageId: null,
+  pieces: [],
+  placedCount: 0,
+  dragPiece: null,
+  dragOffX: 0,
+  dragOffY: 0,
+  maxZ: 20,
+  timerInterval: null,
+  startTime: null,
+  fullCanvas: document.createElement("canvas"),
+  edgesH: [],
+  edgesV: [],
+  boardWidth: 0,
+  boardHeight: 0,
+  pieceW: 0,
+  pieceH: 0,
+  tab: 0,
+  margin: 0,
+  confirmAction: null
+};
+
+const els = {
+  screens: {
+    user: document.getElementById("screen-user"),
+    home: document.getElementById("screen-home"),
+    game: document.getElementById("screen-game")
+  },
+  toast: document.getElementById("toast"),
+  userList: document.getElementById("user-list"),
+  newUserName: document.getElementById("new-user-name"),
+  activeUserName: document.getElementById("active-user-name"),
+  summaryLevel: document.getElementById("summary-level"),
+  summaryStars: document.getElementById("summary-stars"),
+  summaryClear: document.getElementById("summary-clear"),
+  summaryStreak: document.getElementById("summary-streak"),
+  homeWorldTabs: document.getElementById("home-world-tabs"),
+  stageGrid: document.getElementById("stage-grid"),
+  stagePanelTitle: document.getElementById("stage-panel-title"),
+  stagePanelMeta: document.getElementById("stage-panel-meta"),
+  gameStageTitle: document.getElementById("game-stage-title"),
+  gameStageCopy: document.getElementById("game-stage-copy"),
+  gameCounter: document.getElementById("game-counter"),
+  gameTimer: document.getElementById("game-timer"),
+  gameGoal: document.getElementById("game-goal"),
+  board: document.getElementById("board"),
+  boardGuide: document.getElementById("board-guide"),
+  boardGuideCtx: document.getElementById("board-guide").getContext("2d"),
+  gameArea: document.getElementById("game-area"),
+  previewCanvas: document.getElementById("preview-canvas"),
+  previewCtx: document.getElementById("preview-canvas").getContext("2d"),
+  completeModal: document.getElementById("complete-modal"),
+  completeCopy: document.getElementById("complete-copy"),
+  completeStars: document.getElementById("complete-stars"),
+  completeTime: document.getElementById("complete-time"),
+  completeXp: document.getElementById("complete-xp"),
+  confirmModal: document.getElementById("confirm-modal"),
+  confirmTitle: document.getElementById("confirm-title"),
+  confirmCopy: document.getElementById("confirm-copy")
+};
+
+const AudioEngine = {
+  ctx: null,
+  master: null,
+  muted: false,
+  bgmTimer: null,
+  currentTheme: null,
+  step: 0,
+  ensure() {
+    if (this.ctx) return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    this.ctx = new AudioCtx();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.5;
+    this.master.connect(this.ctx.destination);
+  },
+  unlock() {
+    this.ensure();
+    if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+  },
+  tone(freq, duration, type, volume, delay) {
+    if (this.muted) return;
+    this.unlock();
+    if (!this.ctx || !this.master) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const when = this.ctx.currentTime + (delay || 0);
+    osc.type = type || "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(volume || 0.03, when + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    osc.connect(gain);
+    gain.connect(this.master);
+    osc.start(when);
+    osc.stop(when + duration + 0.04);
+  },
+  playClick() {
+    this.tone(520, 0.08, "triangle", 0.045, 0);
+  },
+  playPlace() {
+    this.tone(660, 0.10, "triangle", 0.075, 0);
+    this.tone(880, 0.14, "sine", 0.055, 0.04);
+  },
+  playShuffle() {
+    this.tone(420, 0.08, "square", 0.04, 0);
+    this.tone(520, 0.08, "square", 0.04, 0.04);
+    this.tone(620, 0.08, "square", 0.04, 0.08);
+  },
+  playSuccess() {
+    [523, 659, 784, 1046].forEach((freq, index) => this.tone(freq, 0.24, "triangle", 0.075, index * 0.06));
+  },
+  getThemeNotes(theme) {
+    const scores = {
+      city: [392, 440, 523, 659, 587, 523],
+      toy: [330, 392, 494, 523, 587, 494],
+      winter: [349, 440, 523, 587, 698, 523],
+      princess: [392, 494, 587, 659, 784, 659],
+      emotion: [440, 554, 659, 740, 659, 554],
+      space: [294, 392, 440, 523, 659, 523]
+    };
+    return scores[theme] || scores.city;
+  },
+  startBgm(theme) {
+    if (this.currentTheme === theme && this.bgmTimer) return;
+    this.stopBgm();
+    this.currentTheme = theme;
+    this.step = 0;
+    const notes = this.getThemeNotes(theme);
+    const playLoop = () => {
+      if (this.muted) return;
+      const note = notes[this.step % notes.length];
+      this.tone(note, 0.42, "sine", 0.03, 0);
+      this.tone(note / 2, 0.5, "triangle", 0.018, 0.02);
+      if (this.step % 2 === 0) this.tone(note * 1.5, 0.18, "sine", 0.014, 0.18);
+      this.step += 1;
+    };
+    playLoop();
+    this.bgmTimer = window.setInterval(playLoop, 720);
+  },
+  stopBgm() {
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+    this.currentTheme = null;
+  }
+};
+
+function buildStages() {
+  const stages = [];
+  let id = 1;
+  for (let worldIndex = 0; worldIndex < WORLD_DEFS.length; worldIndex++) {
+    const world = WORLD_DEFS[worldIndex];
+    for (let stageIndex = 0; stageIndex < 10; stageIndex++) {
+      const layout = world.layouts[stageIndex];
+      const family = world.familyCycle[stageIndex % world.familyCycle.length];
+      const image = getImageForWorld(worldIndex + 1, stageIndex, family);
+      stages.push({
+        id,
+        world: worldIndex + 1,
+        worldName: world.name,
+        worldShort: world.short,
+        cols: layout[0],
+        rows: layout[1],
+        total: layout[0] * layout[1],
+        family,
+        imageId: image.id,
+        imageSrc: image.src,
+        title: `${world.short} ${stageIndex + 1}`,
+        themeTitle: image.title,
+        stageIndex: stageIndex + 1,
+        difficultyTier: worldIndex + 1
+      });
+      id += 1;
+    }
+  }
+  return stages;
+}
+
+function getImageForWorld(worldNumber, stageIndex, family) {
+  const familyImages = IMAGE_POOL.filter((item) => item.family === family);
+  if (!familyImages.length) return IMAGE_POOL[0];
+  return familyImages[(worldNumber + stageIndex) % familyImages.length];
+}
+
+function getStageById(stageId) {
+  return STAGES.find((stage) => stage.id === stageId);
+}
+
+function getActiveUser() {
+  return state.users.find((user) => user.id === state.activeUserId) || null;
+}
+
+function getSelectedUser() {
+  return state.users.find((user) => user.id === state.selectedUserId) || null;
+}
+
+function uid() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+function createUser(name) {
+  return {
+    id: uid(),
+    name,
+    createdAt: Date.now(),
+    progress: {
+      xp: 0,
+      totalStars: 0,
+      unlockedStage: 1,
+      lastPlayedStage: 1,
+      streak: 0,
+      lastPlayedDate: "",
+      completed: {}
+    }
+  };
+}
+
+function loadUsers() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.users) || "[]");
+    state.users = Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    state.users = [];
+  }
+  const storedActive = localStorage.getItem(STORAGE_KEYS.activeUserId);
+  state.activeUserId = state.users.some((user) => user.id === storedActive) ? storedActive : (state.users[0] ? state.users[0].id : null);
+  state.selectedUserId = state.activeUserId || (state.users[0] ? state.users[0].id : null);
+  normalizeUsers();
+}
+
+function normalizeUsers() {
+  state.users = state.users.map((user) => ({
+    id: user.id || uid(),
+    name: user.name || "플레이어",
+    createdAt: user.createdAt || Date.now(),
+    progress: {
+      xp: user.progress && Number(user.progress.xp) || 0,
+      totalStars: user.progress && Number(user.progress.totalStars) || 0,
+      unlockedStage: user.progress && Number(user.progress.unlockedStage) || 1,
+      lastPlayedStage: user.progress && Number(user.progress.lastPlayedStage) || 1,
+      streak: user.progress && Number(user.progress.streak) || 0,
+      lastPlayedDate: user.progress && user.progress.lastPlayedDate || "",
+      completed: user.progress && user.progress.completed || {}
+    }
+  }));
+}
+
+function saveUsers() {
+  localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(state.users));
+  if (state.activeUserId) {
+    localStorage.setItem(STORAGE_KEYS.activeUserId, state.activeUserId);
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.activeUserId);
+  }
+}
+
+function getTodayString() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function updateStreak(user) {
+  const today = getTodayString();
+  if (user.progress.lastPlayedDate === today) return;
+  if (!user.progress.lastPlayedDate) {
+    user.progress.streak = 1;
+  } else {
+    const prev = new Date(user.progress.lastPlayedDate);
+    const curr = new Date(today);
+    const diff = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+    user.progress.streak = diff === 1 ? user.progress.streak + 1 : 1;
+  }
+  user.progress.lastPlayedDate = today;
+}
+
+function getLevelInfo(xp) {
+  const level = Math.floor(Math.sqrt(xp / 120)) + 1;
+  const currentBase = Math.pow(level - 1, 2) * 120;
+  const nextBase = Math.pow(level, 2) * 120;
+  const current = xp - currentBase;
+  const needed = nextBase - currentBase;
+  return { level, current, needed };
+}
+
+function getWorldUnlocked(user, worldNumber) {
+  return user.progress.unlockedStage >= ((worldNumber - 1) * 10) + 1;
+}
+
+function getRecord(user, stageId) {
+  return user.progress.completed[String(stageId)] || null;
+}
+
+function getStarsMarkup(count) {
+  let text = "";
+  for (let i = 0; i < 3; i++) text += i < count ? "⭐" : "☆";
+  return text;
+}
+
+function getFamilyLabel(family) {
+  const labels = {
+    city: "동물 도시",
+    toy: "토이룸",
+    winter: "겨울 동화",
+    princess: "공주 판타지",
+    emotion: "감정 모험",
+    space: "우주 사가"
+  };
+  return labels[family] || family;
+}
+
+function getFamilyIcon(family) {
+  const icons = {
+    city: "🏙️",
+    toy: "🧸",
+    winter: "❄️",
+    princess: "👑",
+    emotion: "😊",
+    space: "🚀"
+  };
+  return icons[family] || "🧩";
+}
+
+function getWorldFamiliesLabel(world) {
+  return world.familyCycle.map((family) => `${getFamilyIcon(family)} ${getFamilyLabel(family)}`).join(" · ");
+}
+
+function getWorldProgress(user, worldNumber) {
+  const firstStage = ((worldNumber - 1) * 10) + 1;
+  const lastStage = firstStage + 9;
+  const completed = Object.keys(user.progress.completed)
+    .map(Number)
+    .filter((stageId) => stageId >= firstStage && stageId <= lastStage)
+    .length;
+  const unlocked = Math.max(0, Math.min(user.progress.unlockedStage, lastStage + 1) - firstStage);
+  return { completed, unlocked };
+}
+
+function getBadges(user) {
+  const clearCount = Object.keys(user.progress.completed).length;
+  const stars = user.progress.totalStars;
+  const badges = [];
+  if (clearCount >= 1) badges.push("첫 완성");
+  if (clearCount >= 10) badges.push("10스테이지 돌파");
+  if (clearCount >= 50) badges.push("50스테이지 장인");
+  if (stars >= 30) badges.push("별 수집가");
+  if (stars >= 120) badges.push("황금별 챔피언");
+  if (user.progress.streak >= 3) badges.push("연속 플레이");
+  if (user.progress.unlockedStage > 100) badges.push("엔딩 도달");
+  return badges.length ? badges : ["아직 배지 준비 중"];
+}
+
+function showToast(message) {
+  els.toast.textContent = message;
+  els.toast.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+}
+
+function showScreen(name) {
+  Object.values(els.screens).forEach((screen) => screen.classList.remove("active"));
+  els.screens[name].classList.add("active");
+}
+
+function setThemeClass(family) {
+  const themeMap = {
+    city: "city",
+    toy: "toy",
+    winter: "winter",
+    princess: "princess",
+    emotion: "emotion",
+    space: "space"
+  };
+  document.body.className = `theme-${themeMap[family] || "city"}`;
+}
+
+function renderUsers() {
+  if (!state.users.length) {
+    els.userList.innerHTML = `<div class="panel" style="padding:18px;font-size:14px;color:var(--muted)">아직 사용자가 없어요. 아래에서 이름을 추가해 주세요.</div>`;
+    return;
+  }
+  els.userList.innerHTML = state.users.map((user) => {
+    const clearCount = Object.keys(user.progress.completed).length;
+    return `
+      <div class="user-row">
+        <button class="user-item ${user.id === state.selectedUserId ? "active" : ""}" data-user-id="${user.id}">
+          <div>
+            <div class="user-name">👤 ${escapeHtml(user.name)}</div>
+            <div class="meta">⭐${user.progress.totalStars} 🏆${clearCount}/100</div>
+          </div>
+          <span class="delete-btn" role="button" tabindex="0" data-delete-user="${user.id}">✕</span>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderHome() {
+  const user = getActiveUser();
+  if (!user) {
+    showScreen("user");
+    renderUsers();
+    return;
+  }
+  const levelInfo = getLevelInfo(user.progress.xp);
+  const clearCount = Object.keys(user.progress.completed).length;
+  const nextStage = Math.min(user.progress.unlockedStage, STAGES.length);
+  const nextStageObj = getStageById(nextStage);
+  const currentWorld = nextStageObj.world;
+  state.selectedWorld = Math.max(1, Math.min(state.selectedWorld, currentWorld));
+
+  setThemeClass(nextStageObj.family);
+  els.activeUserName.textContent = user.name;
+  els.summaryLevel.textContent = `Lv.${levelInfo.level}`;
+  els.summaryStars.textContent = user.progress.totalStars;
+  els.summaryClear.textContent = clearCount;
+  els.summaryStreak.textContent = `${user.progress.streak}일`;
+
+  renderWorldTabs();
+  renderStageGrid();
+}
+
+function renderWorldTabs() {
+  const user = getActiveUser();
+  const highestWorld = Math.ceil(Math.min(user.progress.unlockedStage, STAGES.length) / 10);
+  els.homeWorldTabs.innerHTML = WORLD_DEFS.map((world, index) => {
+    const worldNumber = index + 1;
+    const locked = !getWorldUnlocked(user, worldNumber);
+    const progress = getWorldProgress(user, worldNumber);
+    const status = locked ? "잠김" : `${progress.completed}/10 완료`;
+    return `
+      <button class="world-tab ${state.selectedWorld === worldNumber ? "active" : ""} ${locked ? "locked" : ""}" data-world="${worldNumber}">
+        <span class="world-tab-top">
+          <span class="world-tab-title">${locked ? "🔒" : getFamilyIcon(world.familyCycle[0])} ${worldNumber}. ${world.short}</span>
+          <span>${status}</span>
+        </span>
+        <span class="world-tab-meta">${getWorldFamiliesLabel(world)}</span>
+      </button>
+    `;
+  }).join("");
+  els.stagePanelTitle.textContent = `월드 ${state.selectedWorld}. ${WORLD_DEFS[state.selectedWorld - 1].name}`;
+  const selectedWorld = WORLD_DEFS[state.selectedWorld - 1];
+  els.stagePanelMeta.textContent = `${selectedWorld.description} · ${getWorldFamiliesLabel(selectedWorld)} · 열린 월드 ${highestWorld} / 10`;
+}
+
+function renderStageGrid() {
+  const user = getActiveUser();
+  const stages = STAGES.filter((stage) => stage.world === state.selectedWorld);
+  els.stageGrid.innerHTML = stages.map((stage) => {
+    const locked = stage.id > user.progress.unlockedStage;
+    const record = getRecord(user, stage.id);
+    const completed = Boolean(record);
+    const stars = record ? getStarsMarkup(record.stars) : "☆☆☆";
+    const current = stage.id === user.progress.unlockedStage && !completed;
+    const stageState = locked ? "잠김" : completed ? "완료" : current ? "다음" : "열림";
+    return `
+      <button class="stage-card family-${stage.family} ${locked ? "locked" : ""} ${completed ? "completed" : ""} ${current ? "current" : ""}" data-stage-id="${stage.id}">
+        <div class="stage-thumb" style="background-image:url('${stage.imageSrc}')"></div>
+        <div class="stage-state">${stageState}</div>
+        <div class="stage-body">
+          <div class="stage-label">${getFamilyIcon(stage.family)} ${getFamilyLabel(stage.family)}</div>
+          <h3>${stage.worldShort} ${stage.stageIndex} · 스테이지 ${stage.id}</h3>
+          <div class="stage-meta">${stage.cols}x${stage.rows} · ${stage.total}피스<br>${stage.themeTitle}</div>
+          <div class="stars">${stars}</div>
+        </div>
+      </button>
+    `;
+  }).join("");
+}
+
+function confirmAction(title, copy, onConfirm) {
+  state.confirmAction = onConfirm;
+  els.confirmTitle.textContent = title;
+  els.confirmCopy.textContent = copy;
+  els.confirmModal.classList.add("show");
+}
+
+function closeConfirm() {
+  state.confirmAction = null;
+  els.confirmModal.classList.remove("show");
+}
+
+function startStage(stageId) {
+  const user = getActiveUser();
+  const stage = getStageById(stageId);
+  if (!user || !stage || stage.id > user.progress.unlockedStage) return;
+  AudioEngine.unlock();
+  AudioEngine.playClick();
+  AudioEngine.startBgm(stage.family);
+  setThemeClass(stage.family);
+  user.progress.lastPlayedStage = stage.id;
+  saveUsers();
+  state.currentStageId = stage.id;
+  showScreen("game");
+  configureStage(stage);
+}
+
+function configureStage(stage) {
+  resetTimer();
+  clearPieces();
+  buildEdges(stage.cols, stage.rows);
+  calculateBoard(stage);
+  renderFullImage(stage);
+  drawBoardGuide(stage);
+  createPieces(stage);
+  shufflePieces();
+  els.gameStageTitle.textContent = `스테이지 ${stage.id} · ${stage.worldName}`;
+  const goalTimes = getStageGoals(stage);
+  els.gameStageCopy.textContent = `${stage.themeTitle} · ${stage.cols}x${stage.rows} · ${stage.total}피스 · 별 3개 목표 ${formatTime(goalTimes.gold)}`;
+  els.gameCounter.textContent = `0 / ${stage.total}`;
+  els.gameTimer.textContent = "00:00";
+  els.gameGoal.textContent = `⭐ ${goalTimes.goldLabel}`;
+}
+
+function getStageGoals(stage) {
+  const base = Math.max(18, Math.round(stage.total * 2.7 + stage.difficultyTier * 14));
+  return {
+    gold: base,
+    silver: Math.round(base * 1.38),
+    bronze: Math.round(base * 1.82),
+    goldLabel: formatTime(base)
+  };
+}
+
+function calculateStars(stage, elapsed) {
+  const goals = getStageGoals(stage);
+  if (elapsed <= goals.gold) return 3;
+  if (elapsed <= goals.silver) return 2;
+  return 1;
+}
+
+function calculateXp(stage, stars, firstClear) {
+  return Math.round(stage.total * 1.8 + stage.difficultyTier * 14 + stars * 18 + (firstClear ? 30 : 10));
+}
+
+function updateAfterClear(stage, elapsed) {
+  const user = getActiveUser();
+  const key = String(stage.id);
+  const oldLevel = getLevelInfo(user.progress.xp).level;
+  const stars = calculateStars(stage, elapsed);
+  const firstClear = !user.progress.completed[key];
+  const prevRecord = user.progress.completed[key] || { stars: 0, bestTime: null };
+  const improvedStars = Math.max(prevRecord.stars, stars);
+  const bestTime = prevRecord.bestTime == null ? elapsed : Math.min(prevRecord.bestTime, elapsed);
+  const xpGain = calculateXp(stage, stars, firstClear);
+
+  user.progress.completed[key] = { stars: improvedStars, bestTime };
+  user.progress.xp += xpGain;
+  user.progress.totalStars = Object.values(user.progress.completed).reduce((sum, item) => sum + item.stars, 0);
+  user.progress.unlockedStage = Math.max(user.progress.unlockedStage, Math.min(STAGES.length + 1, stage.id + 1));
+  user.progress.lastPlayedStage = Math.min(STAGES.length, stage.id + 1);
+  updateStreak(user);
+  saveUsers();
+
+  const newLevel = getLevelInfo(user.progress.xp).level;
+  if (newLevel > oldLevel) showToast(`레벨 업! Lv.${newLevel}`);
+  if (user.progress.unlockedStage === stage.id + 1 && stage.id < STAGES.length) showToast(`스테이지 ${stage.id + 1} 오픈!`);
+
+  els.completeCopy.textContent = `${stage.themeTitle} 퍼즐을 완성했어요. ${firstClear ? "첫 클리어 보너스까지 챙겼어요." : "기록 갱신에 도전했어요."}`;
+  els.completeStars.textContent = getStarsMarkup(stars);
+  els.completeTime.textContent = formatTime(elapsed);
+  els.completeXp.textContent = `+${xpGain}`;
+  els.completeModal.classList.add("show");
+
+  AudioEngine.playSuccess();
+  launchConfetti();
+}
+
+function continueLatestStage() {
+  const user = getActiveUser();
+  if (!user) return;
+  const stageId = Math.min(user.progress.lastPlayedStage || user.progress.unlockedStage || 1, STAGES.length);
+  startStage(stageId);
+}
+
+function buildEdges(cols, rows) {
+  state.edgesH = [];
+  state.edgesV = [];
+  for (let r = 0; r <= rows; r++) {
+    state.edgesH[r] = [];
+    for (let c = 0; c < cols; c++) {
+      state.edgesH[r][c] = makeEdge(r === 0 || r === rows);
+    }
+  }
+  for (let r = 0; r < rows; r++) {
+    state.edgesV[r] = [];
+    for (let c = 0; c <= cols; c++) {
+      state.edgesV[r][c] = makeEdge(c === 0 || c === cols);
+    }
+  }
+}
+
+function makeEdge(flat) {
+  if (flat) return { dir: 0 };
+  return {
+    dir: Math.random() > 0.5 ? 1 : -1,
+    neckPos: rand(0.30, 0.42),
+    neckW: rand(0.20, 0.28),
+    tabH: rand(0.70, 1.08),
+    tabW: rand(0.28, 0.40),
+    skew: rand(-0.04, 0.04),
+    neckCurve: rand(0.02, 0.15)
+  };
+}
+
+function edgeCommands(len, edge, flip, reverse) {
+  const d = edge.dir * flip;
+  if (d === 0) return [{ cmd: "L", x: len, y: 0 }];
+  let np;
+  let nw;
+  let ne;
+  let sk;
+  if (reverse) {
+    np = 1 - (edge.neckPos + edge.neckW);
+    nw = edge.neckW;
+    ne = np + nw;
+    sk = -edge.skew;
+  } else {
+    np = edge.neckPos;
+    nw = edge.neckW;
+    ne = np + nw;
+    sk = edge.skew;
+  }
+  const th = edge.tabH * state.tab * d;
+  const tw = edge.tabW;
+  const nc = edge.neckCurve;
+  const center = (np + ne) / 2 + sk;
+  const tl = center - tw / 2;
+  const tr = center + tw / 2;
+  return [
+    { cmd: "L", x: len * np, y: 0 },
+    { cmd: "C", x1: len * np, y1: -d * state.tab * nc, x2: len * tl, y2: th * 0.4, x: len * tl, y: th },
+    { cmd: "C", x1: len * (tl + (center - tl) * 0.5), y1: th * 1.15, x2: len * (center + (tr - center) * 0.5), y2: th * 1.15, x: len * tr, y: th },
+    { cmd: "C", x1: len * tr, y1: th * 0.4, x2: len * ne, y2: -d * state.tab * nc, x: len * ne, y: 0 },
+    { cmd: "L", x: len, y: 0 }
+  ];
+}
+
+function transformPoint(x, y, side, w, h) {
+  if (side === "top") return { x, y };
+  if (side === "right") return { x: w - y, y: x };
+  if (side === "bottom") return { x: w - x, y: h - y };
+  return { x: y, y: h - x };
+}
+
+function drawPiecePath(ctx, col, row) {
+  const w = state.pieceW;
+  const h = state.pieceH;
+  const topEdge = state.edgesH[row][col];
+  const bottomEdge = state.edgesH[row + 1][col];
+  const leftEdge = state.edgesV[row][col];
+  const rightEdge = state.edgesV[row][col + 1];
+  const sides = [
+    { edge: topEdge, side: "top", len: w, flip: 1, reverse: false },
+    { edge: rightEdge, side: "right", len: h, flip: 1, reverse: false },
+    { edge: bottomEdge, side: "bottom", len: w, flip: -1, reverse: true },
+    { edge: leftEdge, side: "left", len: h, flip: -1, reverse: true }
+  ];
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  for (const side of sides) {
+    const commands = edgeCommands(side.len, side.edge, side.flip, side.reverse);
+    for (const command of commands) {
+      if (command.cmd === "L") {
+        const p = transformPoint(command.x, command.y, side.side, w, h);
+        ctx.lineTo(p.x, p.y);
+      } else {
+        const p1 = transformPoint(command.x1, command.y1, side.side, w, h);
+        const p2 = transformPoint(command.x2, command.y2, side.side, w, h);
+        const p = transformPoint(command.x, command.y, side.side, w, h);
+        ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p.x, p.y);
+      }
+    }
+  }
+  ctx.closePath();
+}
+
+function calculateBoard(stage) {
+  const areaRect = els.gameArea.getBoundingClientRect();
+  const usableWidth = Math.max(320, areaRect.width - 100);
+  const usableHeight = Math.max(320, areaRect.height - 70);
+  const pieceSize = Math.min(
+    usableWidth / stage.cols,
+    usableHeight / stage.rows,
+    820 / Math.max(stage.cols, stage.rows)
+  );
+  state.pieceW = pieceSize;
+  state.pieceH = pieceSize;
+  state.boardWidth = state.pieceW * stage.cols;
+  state.boardHeight = state.pieceH * stage.rows;
+  state.tab = Math.max(8, Math.min(state.pieceW, state.pieceH) * 0.18);
+  state.margin = Math.ceil(state.tab * 1.45);
+  els.board.style.width = `${state.boardWidth}px`;
+  els.board.style.height = `${state.boardHeight}px`;
+  els.boardGuide.width = Math.ceil(state.boardWidth);
+  els.boardGuide.height = Math.ceil(state.boardHeight);
+}
+
+function renderFullImage(stage) {
+  state.fullCanvas.width = stage.cols * 240;
+  state.fullCanvas.height = stage.rows * 240;
+  const ctx = state.fullCanvas.getContext("2d");
+  ctx.clearRect(0, 0, state.fullCanvas.width, state.fullCanvas.height);
+  const image = imageCache.get(stage.imageId);
+  drawThemeImage(ctx, image, state.fullCanvas.width, state.fullCanvas.height);
+  const previewWidth = 180;
+  const previewHeight = Math.max(120, Math.round(previewWidth * (stage.rows / stage.cols)));
+  els.previewCanvas.width = previewWidth;
+  els.previewCanvas.height = previewHeight;
+  els.previewCtx.clearRect(0, 0, previewWidth, previewHeight);
+  els.previewCtx.drawImage(state.fullCanvas, 0, 0, previewWidth, previewHeight);
+}
+
+function drawThemeImage(ctx, image, w, h) {
+  const sourceRatio = image.width / image.height;
+  const targetRatio = w / h;
+  let sx = 0;
+  let sy = 0;
+  let sw = image.width;
+  let sh = image.height;
+  if (sourceRatio > targetRatio) {
+    sw = image.height * targetRatio;
+    sx = (image.width - sw) / 2;
+  } else {
+    sh = image.width / targetRatio;
+    sy = (image.height - sh) / 2;
+  }
+  ctx.drawImage(image, sx, sy, sw, sh, 0, 0, w, h);
+}
+
+function drawBoardGuide(stage) {
+  const ctx = els.boardGuideCtx;
+  ctx.clearRect(0, 0, els.boardGuide.width, els.boardGuide.height);
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  for (let row = 0; row < stage.rows; row++) {
+    for (let col = 0; col < stage.cols; col++) {
+      ctx.save();
+      ctx.translate(col * state.pieceW, row * state.pieceH);
+      drawPiecePath(ctx, col, row);
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.76)";
+      ctx.shadowColor = "rgba(19,22,40,0.35)";
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = Math.max(1.6, Math.min(state.pieceW, state.pieceH) * 0.03);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(59,74,122,0.32)";
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = Math.max(0.8, Math.min(state.pieceW, state.pieceH) * 0.012);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function clearPieces() {
+  state.pieces.forEach((piece) => piece.el.remove());
+  state.pieces = [];
+}
+
+function createPieces(stage) {
+  state.placedCount = 0;
+  state.maxZ = 20;
+  els.gameCounter.textContent = `0 / ${stage.total}`;
+  for (let row = 0; row < stage.rows; row++) {
+    for (let col = 0; col < stage.cols; col++) {
+      const canvas = document.createElement("canvas");
+      canvas.className = "piece";
+      canvas.width = Math.ceil(state.pieceW + state.margin * 2);
+      canvas.height = Math.ceil(state.pieceH + state.margin * 2);
+      const pCtx = canvas.getContext("2d");
+
+      pCtx.save();
+      pCtx.translate(state.margin, state.margin);
+      drawPiecePath(pCtx, col, row);
+      pCtx.clip();
+      pCtx.drawImage(
+        state.fullCanvas,
+        (col * state.fullCanvas.width / stage.cols) - state.margin * (state.fullCanvas.width / state.boardWidth),
+        (row * state.fullCanvas.height / stage.rows) - state.margin * (state.fullCanvas.height / state.boardHeight),
+        (state.fullCanvas.width / stage.cols) + state.margin * 2 * (state.fullCanvas.width / state.boardWidth),
+        (state.fullCanvas.height / stage.rows) + state.margin * 2 * (state.fullCanvas.height / state.boardHeight),
+        -state.margin,
+        -state.margin,
+        state.pieceW + state.margin * 2,
+        state.pieceH + state.margin * 2
+      );
+      pCtx.restore();
+
+      pCtx.save();
+      pCtx.translate(state.margin, state.margin);
+      drawPiecePath(pCtx, col, row);
+      pCtx.strokeStyle = "rgba(255,255,255,0.86)";
+      pCtx.shadowColor = "rgba(18,15,34,0.26)";
+      pCtx.shadowBlur = 8;
+      pCtx.lineWidth = Math.max(1.2, Math.min(state.pieceW, state.pieceH) * 0.03);
+      pCtx.stroke();
+      pCtx.restore();
+
+      const piece = {
+        el: canvas,
+        targetX: col * state.pieceW - state.margin,
+        targetY: row * state.pieceH - state.margin,
+        placed: false
+      };
+      canvas.style.zIndex = ++state.maxZ;
+      state.pieces.push(piece);
+      els.gameArea.appendChild(canvas);
+    }
+  }
+}
+
+function shufflePieces() {
+  const boardRect = els.board.getBoundingClientRect();
+  const areaRect = els.gameArea.getBoundingClientRect();
+  const pieceWidth = state.pieceW + state.margin * 2;
+  const pieceHeight = state.pieceH + state.margin * 2;
+  const allowedIntrusionX = Math.min(pieceWidth * 0.28, state.margin + state.pieceW * 0.18);
+  const allowedIntrusionY = Math.min(pieceHeight * 0.28, state.margin + state.pieceH * 0.18);
+  const boardLeft = boardRect.left - areaRect.left;
+  const boardRight = boardRect.right - areaRect.left;
+  const boardTop = boardRect.top - areaRect.top;
+  const boardBottom = boardRect.bottom - areaRect.top;
+  const minX = 12;
+  const minY = 12;
+  const maxX = Math.max(minX, areaRect.width - pieceWidth - 12);
+  const maxY = Math.max(minY, areaRect.height - pieceHeight - 12);
+
+  const zones = [
+    { side: "left", x1: minX, x2: Math.min(maxX, boardLeft - pieceWidth + allowedIntrusionX), y1: minY, y2: maxY },
+    { side: "right", x1: Math.max(minX, boardRight - allowedIntrusionX), x2: maxX, y1: minY, y2: maxY },
+    { side: "top", x1: minX, x2: maxX, y1: minY, y2: Math.min(maxY, boardTop - pieceHeight + allowedIntrusionY) },
+    { side: "bottom", x1: minX, x2: maxX, y1: Math.max(minY, boardBottom - allowedIntrusionY), y2: maxY }
+  ].filter((zone) => zone.x2 >= zone.x1 && zone.y2 >= zone.y1);
+
+  function overlapsBoard(x, y) {
+    return !(x + pieceWidth <= boardLeft || x >= boardRight || y + pieceHeight <= boardTop || y >= boardBottom);
+  }
+
+  function respectsLimit(x, y, side) {
+    const overlapLeft = Math.max(0, x + pieceWidth - boardLeft);
+    const overlapRight = Math.max(0, boardRight - x);
+    const overlapTop = Math.max(0, y + pieceHeight - boardTop);
+    const overlapBottom = Math.max(0, boardBottom - y);
+    if (side === "left") return overlapLeft <= allowedIntrusionX;
+    if (side === "right") return overlapRight <= allowedIntrusionX;
+    if (side === "top") return overlapTop <= allowedIntrusionY;
+    if (side === "bottom") return overlapBottom <= allowedIntrusionY;
+    return true;
+  }
+
+  const placed = [];
+  const sidePool = zones.flatMap((zone) => Array.from({ length: 3 }, () => zone.side));
+  for (let i = sidePool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand(0, i + 1));
+    const temp = sidePool[i];
+    sidePool[i] = sidePool[j];
+    sidePool[j] = temp;
+  }
+  let sideIndex = 0;
+
+  state.pieces.forEach((piece) => {
+    if (piece.placed) return;
+    let x = minX;
+    let y = minY;
+    let found = false;
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const side = sidePool.length ? sidePool[sideIndex % sidePool.length] : null;
+      sideIndex += 1;
+      const zone = zones.find((item) => item.side === side) || zones[Math.floor(rand(0, zones.length || 1))];
+      if (zone) {
+        x = rand(zone.x1, zone.x2);
+        y = rand(zone.y1, zone.y2);
+        if (!respectsLimit(x, y, zone.side)) continue;
+      } else {
+        x = rand(minX, maxX);
+        y = rand(minY, maxY);
+      }
+      const crowded = placed.some((item) => Math.abs(item.x - x) < pieceWidth * 0.52 && Math.abs(item.y - y) < pieceHeight * 0.52);
+      if (crowded) continue;
+      found = true;
+      break;
+    }
+    if (!found) {
+      for (let attempt = 0; attempt < 120; attempt++) {
+        x = rand(minX, maxX);
+        y = rand(minY, maxY);
+        if (overlapsBoard(x, y)) {
+          const okay = (
+            Math.max(0, x + pieceWidth - boardLeft) <= allowedIntrusionX &&
+            Math.max(0, boardRight - x) <= allowedIntrusionX &&
+            Math.max(0, y + pieceHeight - boardTop) <= allowedIntrusionY &&
+            Math.max(0, boardBottom - y) <= allowedIntrusionY
+          );
+          if (!okay) continue;
+        }
+        found = true;
+        break;
+      }
+    }
+    piece.el.classList.remove("placed");
+    piece.placed = false;
+    piece.el.style.left = `${x}px`;
+    piece.el.style.top = `${y}px`;
+    piece.el.style.zIndex = ++state.maxZ;
+    placed.push({ x, y });
+  });
+  state.placedCount = 0;
+  const stage = getStageById(state.currentStageId);
+  els.gameCounter.textContent = `0 / ${stage.total}`;
+  AudioEngine.playShuffle();
+}
+
+function resetTimer() {
+  clearInterval(state.timerInterval);
+  state.timerInterval = null;
+  state.startTime = null;
+}
+
+function startTimerIfNeeded() {
+  if (state.startTime) return;
+  state.startTime = Date.now();
+  state.timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    els.gameTimer.textContent = formatTime(elapsed);
+  }, 1000);
+}
+
+function onPieceDown(event) {
+  const target = event.target.closest("canvas.piece");
+  if (!target) return;
+  const piece = state.pieces.find((item) => item.el === target);
+  if (!piece || piece.placed) return;
+  AudioEngine.unlock();
+  startTimerIfNeeded();
+  event.preventDefault();
+  state.dragPiece = piece;
+  const point = getPoint(event);
+  const rect = target.getBoundingClientRect();
+  state.dragOffX = point.x - rect.left;
+  state.dragOffY = point.y - rect.top;
+  target.style.zIndex = ++state.maxZ;
+  target.style.cursor = "grabbing";
+}
+
+function onPieceMove(event) {
+  if (!state.dragPiece) return;
+  event.preventDefault();
+  const point = getPoint(event);
+  const areaRect = els.gameArea.getBoundingClientRect();
+  state.dragPiece.el.style.left = `${point.x - areaRect.left - state.dragOffX}px`;
+  state.dragPiece.el.style.top = `${point.y - areaRect.top - state.dragOffY}px`;
+}
+
+function onPieceUp() {
+  if (!state.dragPiece) return;
+  const stage = getStageById(state.currentStageId);
+  const piece = state.dragPiece;
+  piece.el.style.cursor = "grab";
+  const boardRect = els.board.getBoundingClientRect();
+  const areaRect = els.gameArea.getBoundingClientRect();
+  const pieceRect = piece.el.getBoundingClientRect();
+  const targetAbsX = boardRect.left + piece.targetX;
+  const targetAbsY = boardRect.top + piece.targetY;
+  const dx = pieceRect.left - targetAbsX;
+  const dy = pieceRect.top - targetAbsY;
+  const snapDistance = Math.max(12, Math.min(state.pieceW, state.pieceH) * (0.26 - Math.min(0.12, stage.difficultyTier * 0.01)));
+
+  if (Math.hypot(dx, dy) < snapDistance) {
+    piece.el.style.left = `${boardRect.left - areaRect.left + piece.targetX}px`;
+    piece.el.style.top = `${boardRect.top - areaRect.top + piece.targetY}px`;
+    piece.el.classList.add("placed");
+    piece.el.style.zIndex = "1";
+    piece.placed = true;
+    state.placedCount += 1;
+    els.gameCounter.textContent = `${state.placedCount} / ${stage.total}`;
+    AudioEngine.playPlace();
+
+    if (state.placedCount === stage.total) {
+      clearInterval(state.timerInterval);
+      const elapsed = state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0;
+      updateAfterClear(stage, elapsed);
+    }
+  }
+  state.dragPiece = null;
+}
+
+function getPoint(event) {
+  if (event.touches && event.touches[0]) return { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  if (event.changedTouches && event.changedTouches[0]) return { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
+  return { x: event.clientX, y: event.clientY };
+}
+
+function formatTime(seconds) {
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const s = String(seconds % 60).padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function rand(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;");
+}
+
+function launchConfetti() {
+  const colors = ["#ff6b6b", "#4dabf7", "#ffd43b", "#51cf66", "#845ef7", "#ffa94d"];
+  for (let i = 0; i < 84; i++) {
+    const node = document.createElement("div");
+    node.className = "confetti";
+    node.style.left = `${rand(0, window.innerWidth)}px`;
+    node.style.top = "-20px";
+    node.style.width = `${rand(7, 14)}px`;
+    node.style.height = `${rand(7, 14)}px`;
+    node.style.background = colors[i % colors.length];
+    node.style.borderRadius = Math.random() > 0.5 ? "50%" : "3px";
+    document.body.appendChild(node);
+    const drift = rand(-180, 180);
+    node.animate([
+      { transform: "translate3d(0,0,0) rotate(0deg)", opacity: 1 },
+      { transform: `translate3d(${drift}px, ${window.innerHeight + 60}px, 0) rotate(${rand(240, 720)}deg)`, opacity: 0.18 }
+    ], {
+      duration: rand(1600, 2600),
+      easing: "cubic-bezier(.22,.8,.28,1)"
+    }).onfinish = () => node.remove();
+  }
+}
+
+function closeCompleteModal() {
+  els.completeModal.classList.remove("show");
+}
+
+function goHome() {
+  closeCompleteModal();
+  showScreen("home");
+  AudioEngine.stopBgm();
+  renderHome();
+}
+
+function bindEvents() {
+  document.getElementById("add-user-btn").addEventListener("click", () => {
+    const name = els.newUserName.value.trim();
+    if (!name) {
+      showToast("이름을 먼저 입력해 주세요.");
+      return;
+    }
+    const user = createUser(name);
+    state.users.push(user);
+    state.selectedUserId = user.id;
+    state.activeUserId = user.id;
+    els.newUserName.value = "";
+    saveUsers();
+    renderUsers();
+    showToast(`${user.name} 사용자 생성 완료!`);
+    AudioEngine.playClick();
+  });
+
+  document.getElementById("enter-user-btn").addEventListener("click", () => {
+    const selected = getSelectedUser();
+    if (!selected) {
+      showToast("먼저 사용자를 선택해 주세요.");
+      return;
+    }
+    state.activeUserId = selected.id;
+    saveUsers();
+    renderHome();
+    showScreen("home");
+  });
+
+  els.userList.addEventListener("click", (event) => {
+    const deleteId = event.target.getAttribute("data-delete-user");
+    if (deleteId) {
+      event.preventDefault();
+      event.stopPropagation();
+      const user = state.users.find((item) => item.id === deleteId);
+      if (!user) return;
+      confirmAction("사용자 삭제", `${user.name} 사용자의 진행도를 삭제할까요? 이 작업은 되돌릴 수 없어요.`, () => {
+        state.users = state.users.filter((item) => item.id !== deleteId);
+        if (state.activeUserId === deleteId) state.activeUserId = state.users[0] ? state.users[0].id : null;
+        if (state.selectedUserId === deleteId) state.selectedUserId = state.users[0] ? state.users[0].id : null;
+        saveUsers();
+        renderUsers();
+      });
+      return;
+    }
+    const userButton = event.target.closest("[data-user-id]");
+    if (!userButton) return;
+    state.selectedUserId = userButton.getAttribute("data-user-id");
+    AudioEngine.playClick();
+    renderUsers();
+  });
+
+  document.getElementById("switch-user-btn").addEventListener("click", () => {
+    state.selectedUserId = state.activeUserId;
+    renderUsers();
+    showScreen("user");
+  });
+
+  els.homeWorldTabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-world]");
+    if (!tab) return;
+    const world = Number(tab.getAttribute("data-world"));
+    const user = getActiveUser();
+    if (!getWorldUnlocked(user, world)) {
+      showToast("먼저 이전 월드를 열어 주세요.");
+      return;
+    }
+    state.selectedWorld = world;
+    AudioEngine.playClick();
+    renderWorldTabs();
+    renderStageGrid();
+  });
+
+  els.stageGrid.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-stage-id]");
+    if (!card) return;
+    const stageId = Number(card.getAttribute("data-stage-id"));
+    startStage(stageId);
+  });
+
+  document.getElementById("game-shuffle-btn").addEventListener("click", shufflePieces);
+  document.getElementById("game-exit-btn").addEventListener("click", () => {
+    confirmAction("게임 나가기", "지금 홈으로 돌아갈까요? 현재 판은 저장되지 않지만 스테이지 진행도는 유지돼요.", goHome);
+  });
+
+  document.getElementById("complete-next-btn").addEventListener("click", () => {
+    closeCompleteModal();
+    const user = getActiveUser();
+    const next = Math.min(user.progress.unlockedStage, STAGES.length);
+    if (next > STAGES.length || next === state.currentStageId) {
+      goHome();
+    } else {
+      startStage(next);
+    }
+  });
+
+  document.getElementById("complete-home-btn").addEventListener("click", goHome);
+
+  document.getElementById("confirm-cancel-btn").addEventListener("click", closeConfirm);
+  document.getElementById("confirm-ok-btn").addEventListener("click", () => {
+    const action = state.confirmAction;
+    closeConfirm();
+    if (action) action();
+  });
+
+  document.addEventListener("mousedown", onPieceDown);
+  document.addEventListener("mousemove", onPieceMove);
+  document.addEventListener("mouseup", onPieceUp);
+  document.addEventListener("touchstart", onPieceDown, { passive: false });
+  document.addEventListener("touchmove", onPieceMove, { passive: false });
+  document.addEventListener("touchend", onPieceUp, { passive: false });
+  document.addEventListener("pointerdown", () => AudioEngine.unlock(), { once: true });
+
+  window.addEventListener("resize", () => {
+    if (state.currentStageId && els.screens.game.classList.contains("active")) {
+      configureStage(getStageById(state.currentStageId));
+    }
+  });
+}
+
+function preloadImages() {
+  return Promise.all(IMAGE_POOL.map((asset) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      imageCache.set(asset.id, image);
+      resolve();
+    };
+    image.onerror = () => reject(new Error(`이미지를 불러오지 못했습니다: ${asset.src}`));
+    image.src = asset.src;
+  })));
+}
+
+function init() {
+  preloadImages()
+    .then(() => {
+      loadUsers();
+      bindEvents();
+      renderUsers();
+      if (state.activeUserId) {
+        renderHome();
+        showScreen("home");
+      } else {
+        showScreen("user");
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      showToast("이미지 리소스를 불러오지 못했어요.");
+    });
+}
+
+init();
+</script>
+</body>
+</html>
