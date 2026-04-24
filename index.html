@@ -843,6 +843,36 @@ const STORAGE_KEYS = {
   activeUserId: "kids-jigsaw-active-user-v1"
 };
 
+
+const DB_CONFIG = {
+  supabaseUrl: "https://mbvxgkghwgympkepjudd.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1idnhna2dod2d5bXBrZXBqdWRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5OTMzOTgsImV4cCI6MjA4NzU2OTM5OH0.j_FSCMYdNnfoimu-kYW8oY50VN1jB-QERrAsabjorGw",
+  appSlug: "jigsaw-puzzle-1"
+};
+
+async function persistUserToDb(user) {
+  const response = await fetch(`${DB_CONFIG.supabaseUrl}/rest/v1/kids_jigsaw_users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": DB_CONFIG.supabaseAnonKey,
+      "Authorization": `Bearer ${DB_CONFIG.supabaseAnonKey}`,
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify({
+      app_slug: DB_CONFIG.appSlug,
+      client_user_id: user.id,
+      name: user.name
+    })
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`DB save failed: ${response.status} ${text}`);
+  }
+  const rows = await response.json().catch(() => []);
+  return Array.isArray(rows) ? rows[0] : null;
+}
+
 const IMAGE_POOL = [
   { id: "city-1", family: "city", title: "동물 도시 산책", src: "./zootopia-style-jigsaw-sample.png" },
   { id: "toy-1", family: "toy", title: "토이룸 모험 1", src: "./toyroom-jigsaw-sample-1.png" },
@@ -2013,22 +2043,30 @@ function goHome() {
 }
 
 function bindEvents() {
-  document.getElementById("add-user-btn").addEventListener("click", () => {
-    const name = els.newUserName.value.trim();
-    if (!name) {
-      showToast("이름을 먼저 입력해 주세요.");
-      return;
-    }
-    const user = createUser(name);
-    state.users.push(user);
-    state.selectedUserId = user.id;
-    state.activeUserId = user.id;
-    els.newUserName.value = "";
-    saveUsers();
-    renderUsers();
-    showToast(`${user.name} 사용자 생성 완료!`);
-    AudioEngine.playClick();
-  });
+
+document.getElementById("add-user-btn").addEventListener("click", async () => {
+  const name = els.newUserName.value.trim();
+  if (!name) {
+    showToast("이름을 먼저 입력해 주세요.");
+    return;
+  }
+  const user = createUser(name);
+  state.users.push(user);
+  state.selectedUserId = user.id;
+  state.activeUserId = user.id;
+  els.newUserName.value = "";
+  saveUsers();
+  renderUsers();
+  try {
+    await persistUserToDb(user);
+    showToast(`${user.name} 사용자 생성 완료! DB에도 저장했어요.`);
+  } catch (error) {
+    console.error(error);
+    showToast(`${user.name} 사용자는 생성됐지만 DB 저장은 실패했어요.`);
+  }
+  AudioEngine.playClick();
+});
+
 
   document.getElementById("enter-user-btn").addEventListener("click", () => {
     const selected = getSelectedUser();
