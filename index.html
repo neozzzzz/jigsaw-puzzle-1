@@ -850,27 +850,138 @@ const DB_CONFIG = {
   appSlug: "jigsaw-puzzle-1"
 };
 
-async function persistUserToDb(user) {
-  const response = await fetch(`${DB_CONFIG.supabaseUrl}/rest/v1/kids_jigsaw_users`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": DB_CONFIG.supabaseAnonKey,
-      "Authorization": `Bearer ${DB_CONFIG.supabaseAnonKey}`,
-      "Prefer": "return=representation"
-    },
-    body: JSON.stringify({
-      app_slug: DB_CONFIG.appSlug,
-      client_user_id: user.id,
-      name: user.name
-    })
-  });
+function getDbHeaders() {
+  return {
+    "Content-Type": "application/json",
+    apikey: DB_CONFIG.supabaseAnonKey,
+    Authorization: `Bearer ${DB_CONFIG.supabaseAnonKey}`
+  };
+}
+
+function parseProgress(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    xp: Number(raw.xp) || 0,
+    totalStars: Number(raw.totalStars) || 0,
+    unlockedStage: Number(raw.unlockedStage) || 1,
+    lastPlayedStage: Number(raw.lastPlayedStage) || 1,
+    streak: Number(raw.streak) || 0,
+    lastPlayedDate: raw.lastPlayedDate || "",
+    completed: raw.completed && typeof raw.completed === "object" ? raw.completed : {}
+  };
+}
+
+function normalizeUserFromDbRow(row) {
+  const progress = parseProgress(row.progress || {}) || parseProgress({});
+  return {
+    id: row.client_user_id || row.id,
+    name: row.name || "플레이어",
+    createdAt: Number(row.created_at ? Date.parse(row.created_at) : (row.createdAt || Date.now())),
+    progress: {
+      xp: progress.xp,
+      totalStars: progress.totalStars,
+      unlockedStage: progress.unlockedStage,
+      lastPlayedStage: progress.lastPlayedStage,
+      streak: progress.streak,
+      lastPlayedDate: progress.lastPlayedDate,
+      completed: progress.completed
+    }
+  };
+}
+
+function buildUserPayload(user) {
+  return {
+    app_slug: DB_CONFIG.appSlug,
+    client_user_id: user.id,
+    name: user.name,
+    progress: user.progress || {
+      xp: 0,
+      totalStars: 0,
+      unlockedStage: 1,
+      lastPlayedStage: 1,
+      streak: 0,
+      lastPlayedDate: "",
+      completed: {}
+    }
+  };
+}
+
+async function fetchUsersFromDb() {
+  const queries = [
+    `${DB_CONFIG.supabaseUrl}/rest/v1/kids_jigsaw_users?app_slug=eq.${encodeURIComponent(DB_CONFIG.appSlug)}&select=client_user_id,name,created_at,progress&order=created_at.asc`,
+    `${DB_CONFIG.supabaseUrl}/rest/v1/kids_jigsaw_users?app_slug=eq.${encodeURIComponent(DB_CONFIG.appSlug)}&select=client_user_id,name,created_at&order=created_at.asc`
+  ];
+  let lastError = null;
+
+  for (const endpoint of queries) {
+    const response = await fetch(endpoint, { headers: getDbHeaders() });
+    if (response.ok) {
+      const rows = await response.json();
+      if (!Array.isArray(rows)) throw new Error("DB 조회 결과 형식이 올바르지 않습니다.");
+      return rows.map(normalizeUserFromDbRow).filter(Boolean);
+    }
+    const text = await response.text();
+    const message = `DB 조회 실패: ${response.status} ${text}`;
+    const status = response.status;
+    lastError = new Error(message);
+    if (status === 400 || status === 422 || status === 404) {
+      continue;
+    }
+    throw lastError;
+  }
+
+  throw lastError || new Error("DB 조회 실패: 데이터 조회 중 오류가 발생했습니다.");
+}
+
+async function syncUserToDb(user) {
+  const response = await fetch(
+    `${DB_CONFIG.supabaseUrl}/rest/v1/kids_jigsaw_users?on_conflict=app_slug,client_user_id`,
+    {
+      method: "POST",
+      headers: {
+        ...getDbHeaders(),
+        "Prefer": "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify(buildUserPayload(user))
+    }
+  );
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`DB save failed: ${response.status} ${text}`);
   }
   const rows = await response.json().catch(() => []);
   return Array.isArray(rows) ? rows[0] : null;
+}
+
+async function persistUserToDb(user) {
+  return syncUserToDb(user);
+}
+
+function queueUserSync(user, options = {}) {
+  if (!user) return Promise.resolve(null);
+  const { silent = true, message = "DB 동기화에 실패했어요." } = options;
+  return syncUserToDb(user).catch((error) => {
+    console.error(error);
+    if (!silent) showToast(message);
+    throw error;
+  });
+}
+
+async function removeUserFromDb(userId) {
+  const response = await fetch(
+    `${DB_CONFIG.supabaseUrl}/rest/v1/kids_jigsaw_users?app_slug=eq.${encodeURIComponent(DB_CONFIG.appSlug)}&client_user_id=eq.${encodeURIComponent(userId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        ...getDbHeaders(),
+        Prefer: "return=representation"
+      }
+    }
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`DB 삭제 실패: ${response.status} ${text}`);
+  }
 }
 
 const IMAGE_POOL = [
@@ -1209,17 +1320,43 @@ function createUser(name) {
   };
 }
 
-function loadUsers() {
+async function loadUsers(options = {}) {
+  const {
+    silent = false,
+    preferredActiveUserId = null,
+    preferredSelectedUserId = null
+  } = options;
+
+  try {
+    const response = await fetchUsersFromDb();
+    state.users = response;
+    state._userSource = "db";
+  } catch (error) {
+    console.warn("DB 사용자 목록 조회 실패. 로컬 캐시로 전환:", error);
+    if (!silent) showToast("DB 동기화 실패로 로컬 목록을 사용해요.");
+    state.users = loadUsersFromLocal();
+    state._userSource = "local";
+  }
+
+  normalizeUsers();
+
+  const storedActive = localStorage.getItem(STORAGE_KEYS.activeUserId);
+  const activeCandidates = [preferredActiveUserId, storedActive];
+  const selectedCandidates = [preferredSelectedUserId, preferredActiveUserId, storedActive];
+
+  state.activeUserId = activeCandidates.find((id) => id && state.users.some((user) => user.id === id)) || (state.users[0] ? state.users[0].id : null);
+  state.selectedUserId = selectedCandidates.find((id) => id && state.users.some((user) => user.id === id)) || state.activeUserId || (state.users[0] ? state.users[0].id : null);
+  saveUsers();
+}
+
+function loadUsersFromLocal() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.users) || "[]");
-    state.users = Array.isArray(parsed) ? parsed : [];
+    const users = Array.isArray(parsed) ? parsed : [];
+    return users;
   } catch (error) {
-    state.users = [];
+    return [];
   }
-  const storedActive = localStorage.getItem(STORAGE_KEYS.activeUserId);
-  state.activeUserId = state.users.some((user) => user.id === storedActive) ? storedActive : (state.users[0] ? state.users[0].id : null);
-  state.selectedUserId = state.activeUserId || (state.users[0] ? state.users[0].id : null);
-  normalizeUsers();
 }
 
 function normalizeUsers() {
@@ -1245,6 +1382,27 @@ function saveUsers() {
     localStorage.setItem(STORAGE_KEYS.activeUserId, state.activeUserId);
   } else {
     localStorage.removeItem(STORAGE_KEYS.activeUserId);
+  }
+}
+
+async function refreshUsersFromDb(options = {}) {
+  const {
+    silent = true,
+    preserveSelection = true,
+    rerender = true
+  } = options;
+
+  await loadUsers({
+    silent,
+    preferredActiveUserId: preserveSelection ? state.activeUserId : null,
+    preferredSelectedUserId: preserveSelection ? state.selectedUserId : null
+  });
+
+  if (!rerender) return;
+
+  renderUsers();
+  if (state.activeUserId && els.screens.home.classList.contains("active")) {
+    renderHome();
   }
 }
 
@@ -1486,6 +1644,7 @@ function startStage(stageId) {
   setThemeClass(stage.family);
   user.progress.lastPlayedStage = stage.id;
   saveUsers();
+  queueUserSync(user);
   state.currentStageId = stage.id;
   showScreen("game");
   configureStage(stage);
@@ -1547,6 +1706,7 @@ function updateAfterClear(stage, elapsed) {
   user.progress.lastPlayedStage = Math.min(STAGES.length, stage.id + 1);
   updateStreak(user);
   saveUsers();
+  queueUserSync(user);
 
   const newLevel = getLevelInfo(user.progress.xp).level;
   if (newLevel > oldLevel) showToast(`레벨 업! Lv.${newLevel}`);
@@ -2059,14 +2219,19 @@ document.getElementById("add-user-btn").addEventListener("click", async () => {
   renderUsers();
   try {
     await persistUserToDb(user);
-    showToast(`${user.name} 사용자 생성 완료! DB에도 저장했어요.`);
+    await loadUsers({
+      silent: true,
+      preferredActiveUserId: user.id,
+      preferredSelectedUserId: user.id
+    });
+    renderUsers();
+    showToast(`${user.name} 사용자 생성 완료! 여러 기기에서 같이 불러올 수 있어요.`);
   } catch (error) {
     console.error(error);
     showToast(`${user.name} 사용자는 생성됐지만 DB 저장은 실패했어요.`);
   }
   AudioEngine.playClick();
 });
-
 
   document.getElementById("enter-user-btn").addEventListener("click", () => {
     const selected = getSelectedUser();
@@ -2087,12 +2252,27 @@ document.getElementById("add-user-btn").addEventListener("click", async () => {
       event.stopPropagation();
       const user = state.users.find((item) => item.id === deleteId);
       if (!user) return;
-      confirmAction("사용자 삭제", `${user.name} 사용자의 진행도를 삭제할까요? 이 작업은 되돌릴 수 없어요.`, () => {
+      confirmAction("사용자 삭제", `${user.name} 사용자의 진행도를 삭제할까요? 이 작업은 되돌릴 수 없어요.`, async () => {
+        const snapshot = [...state.users];
+        const snapshotActive = state.activeUserId;
+        const snapshotSelected = state.selectedUserId;
         state.users = state.users.filter((item) => item.id !== deleteId);
-        if (state.activeUserId === deleteId) state.activeUserId = state.users[0] ? state.users[0].id : null;
-        if (state.selectedUserId === deleteId) state.selectedUserId = state.users[0] ? state.users[0].id : null;
+        const nextActive = state.users[0] ? state.users[0].id : null;
+        if (state.activeUserId === deleteId) state.activeUserId = nextActive;
+        if (state.selectedUserId === deleteId) state.selectedUserId = nextActive;
         saveUsers();
         renderUsers();
+        try {
+          await removeUserFromDb(deleteId);
+          showToast(`${user.name} 사용자를 삭제했어요.`);
+        } catch (error) {
+          console.error(error);
+          showToast("DB 삭제 실패로 목록 동기화가 취소될 수 있어요.");
+          state.users = snapshot;
+          state.activeUserId = snapshotActive;
+          state.selectedUserId = snapshotSelected;
+          renderUsers();
+        }
       });
       return;
     }
@@ -2164,6 +2344,13 @@ document.getElementById("add-user-btn").addEventListener("click", async () => {
   document.addEventListener("touchend", onPieceUp, { passive: false });
   document.addEventListener("pointerdown", () => AudioEngine.unlock(), { once: true });
 
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshUsersFromDb({ silent: true, preserveSelection: true });
+  });
+  window.addEventListener("focus", () => {
+    refreshUsersFromDb({ silent: true, preserveSelection: true });
+  });
+
   window.addEventListener("resize", () => {
     if (state.currentStageId && els.screens.game.classList.contains("active")) {
       configureStage(getStageById(state.currentStageId));
@@ -2183,23 +2370,22 @@ function preloadImages() {
   })));
 }
 
-function init() {
-  preloadImages()
-    .then(() => {
-      loadUsers();
-      bindEvents();
-      renderUsers();
-      if (state.activeUserId) {
-        renderHome();
-        showScreen("home");
-      } else {
-        showScreen("user");
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-      showToast("이미지 리소스를 불러오지 못했어요.");
-    });
+async function init() {
+  try {
+    await preloadImages();
+    await loadUsers();
+    bindEvents();
+    renderUsers();
+    if (state.activeUserId) {
+      renderHome();
+      showScreen("home");
+    } else {
+      showScreen("user");
+    }
+  } catch (error) {
+    console.error(error);
+    showToast("이미지 리소스를 불러오지 못했어요.");
+  }
 }
 
 init();
